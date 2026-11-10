@@ -23,18 +23,34 @@ enum_counters: dict[Pass, dict[str, int]] = {}
 
 namespace: str = ""
 in_enum: bool = False
-with open(args.in_file, "rt") as in_file, open(args.out_file, "wt") as out_file:
+skip_invalid_ns: bool = False
+with open(args.in_file, "rt", encoding="utf-8", errors="replace") as in_file, open(
+    args.out_file, "wt", encoding="utf-8"
+) as out_file:
     out_file.write("#ifndef SDK_ENUMS_INTERNAL_HPP_\n")
     out_file.write("#define SDK_ENUMS_INTERNAL_HPP_\n")
 
     for p in Pass:
         print(f"Pass {p.value}/{len(Pass)}: {p.name}")
         enum_counters[p] = {}
+        namespace = ""
+        in_enum = False
+        skip_invalid_ns = False
 
         # Parse every line in the input file
         in_file.seek(0)
         for line in in_file:
             line = line.rstrip()
+
+            if skip_invalid_ns:
+                if line == "}":
+                    skip_invalid_ns = False
+                continue
+
+            # Skip generic/invalid C# namespaces dumped with backticks or angle brackets
+            if re.match(r"^\s*namespace\s+.*[`<>].*\{\s*$", line):
+                skip_invalid_ns = True
+                continue
 
             # Match start of namespace
             if m := re.match(
@@ -52,6 +68,7 @@ with open(args.in_file, "rt") as in_file, open(args.out_file, "wt") as out_file:
                 r"^(?P<indent>\s*)enum\b(\s*(class|struct)\b)?\s*(?P<enum_head_name>[a-zA-Z_]\w*)(?P<enum_base>:\s*([a-zA-Z_]\w*))?\s*{",
                 line,
             ):
+                in_enum = True
                 enum_name: str = m["enum_head_name"]
                 enum_name_full: str = (
                     namespace + "::" + enum_name if namespace else enum_name
@@ -71,7 +88,7 @@ with open(args.in_file, "rt") as in_file, open(args.out_file, "wt") as out_file:
 
                     # Rewrite enum to enum class
                     line = (
-                        f"{m["indent"]}enum class {enum_name}{m["enum_base"] or ""} {{"
+                        f"{m['indent']}enum class {enum_name}{m['enum_base'] or ''} {{"
                     )
 
             if p == Pass.WRITE_OUTPUT:

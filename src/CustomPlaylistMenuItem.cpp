@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "CustomAudioPlayer.hpp"
+#include "CustomMusicLibrary.hpp"
 #include "CustomPlaylistMenuItem.hpp"
 #include "MusicSystemMod.hpp"
 #include "REFrameworkHelper.hpp"
@@ -199,6 +201,16 @@ CustomPlaylistMenuItem::CustomPlaylistMenuItem(std::optional<const std::filesyst
 	if (playlistFileName.has_value())
 	{
 		setCustomPlaylist(loadFavoritesList(m_customPlaylistFileName.value()));
+
+		std::string stem = playlistFileName->stem().string();
+		if (stem.starts_with("playlist_"))
+		{
+			stem = stem.substr(9);
+		}
+		if (!stem.empty())
+		{
+			m_customMusicFolder = CustomMusicLibrary::getCategoryDir(stem);
+		}
 	}
 }
 
@@ -245,6 +257,8 @@ void CustomPlaylistMenuItem::setValue(std::int32_t value) const
 	// Otherwise going empty playlist -> exit to start MMBN music -> change to mix option doesn't restart music
 	changeBgmMusicOptions.push_back(CustomPlaylistMenuItem::Option::Playlist);
 	changeBgmMusicOptions.push_back(CustomPlaylistMenuItem::Option::Favorites);
+	changeBgmMusicOptions.push_back(CustomPlaylistMenuItem::Option::CustomMusic);
+	changeBgmMusicOptions.push_back(CustomPlaylistMenuItem::Option::CustomAndPlaylist);
 
 	bool restartBgm = false;
 	if (std::ranges::contains(changeBgmMusicOptions, oldValue) ||
@@ -282,6 +296,8 @@ bool CustomPlaylistMenuItem::canEnter()
 	case CustomPlaylistMenuItem::Option::PreferredMix:
 	case CustomPlaylistMenuItem::Option::Playlist:
 	case CustomPlaylistMenuItem::Option::Favorites:
+	case CustomPlaylistMenuItem::Option::CustomMusic:
+	case CustomPlaylistMenuItem::Option::CustomAndPlaylist:
 		return true;
 	default:
 		return false;
@@ -301,6 +317,13 @@ bool CustomPlaylistMenuItem::onEnter()
 		break;
 	default:
 		return false;
+	}
+
+	if ((CustomPlaylistMenuItem::Option)getValue() == CustomPlaylistMenuItem::Option::CustomMusic)
+	{
+		std::filesystem::path targetDir = m_customMusicFolder.value_or(CustomMusicLibrary::getBaseCustomMusicDir());
+		CustomMusicLibrary::openFolderInExplorer(targetDir);
+		return true;
 	}
 
 	Object launcher = getSingleton("app.Launcher");
@@ -327,6 +350,9 @@ bool CustomPlaylistMenuItem::onUpdate()
 
 			s_activeInstance = this;
 			installHooksMusicPlayer();
+
+			// Stop any playing external custom audio while in Music Player
+			CustomAudioPlayer::instance().stopAll();
 
 			// stop any playing in-game music
 			Object soundMilkyManager = getType("app.sound.SoundMilkyManager")["_Instance"];
@@ -461,6 +487,7 @@ bool CustomPlaylistMenuItem::onUpdate()
 				saveFavoritesList(s_activeInstance->s_PreferredMixPlaylistFileName, s_PreferredMixPlaylist);
 				break;
 			case CustomPlaylistMenuItem::Option::Playlist:
+			case CustomPlaylistMenuItem::Option::CustomAndPlaylist:
 				if (s_activeInstance->m_customPlaylistFileName.has_value())
 				{
 					saveFavoritesList(s_activeInstance->m_customPlaylistFileName.value(), m_customPlaylist);
@@ -567,6 +594,7 @@ void CustomPlaylistMenuItem::installHooksMusicPlayer()
 			case CustomPlaylistMenuItem::Option::Favorites:
 				break;
 			case CustomPlaylistMenuItem::Option::Playlist:
+			case CustomPlaylistMenuItem::Option::CustomAndPlaylist:
 				launcherMusicPlayer.set("favoriteMusicList", s_activeInstance->m_customPlaylist);
 				break;
 			case CustomPlaylistMenuItem::Option::PreferredMix:

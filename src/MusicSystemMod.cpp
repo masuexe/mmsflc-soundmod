@@ -1,8 +1,12 @@
 #include <Enums_Internal.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <optional>
 
+#include "CustomAudioPlayer.hpp"
+#include "CustomMusicLibrary.hpp"
 #include "MessageManager.hpp"
 #include "MusicSystemMod.hpp"
 #include "REFrameworkHelper.hpp"
@@ -27,6 +31,9 @@ void MusicSystemMod::init()
 		return;
 	}
 	s_initialized = true;
+
+	CustomMusicLibrary::instance().initDirectories();
+	CustomAudioPlayer::instance().init();
 
 	loadSettings();
 }
@@ -71,6 +78,79 @@ void MusicSystemMod::install()
 void MusicSystemMod::uninstall()
 {
 	uninstallHooks();
+	CustomAudioPlayer::instance().shutdown();
+}
+
+void MusicSystemMod::syncCustomAudioVolume()
+{
+	Type managerType = getType("app.sound.SoundMilkyManager");
+	Object manager = managerType["_Instance"];
+	if (manager == nullptr)
+	{
+		CustomAudioPlayer::instance().update();
+		return;
+	}
+
+	float defaultVol = managerType.get<float>("DefaultOptionVolume");
+	float maxScale = 100.0f;
+	if (defaultVol > 0.0f && defaultVol <= 1.0f)
+	{
+		maxScale = 1.0f;
+	}
+	else if (defaultVol > 1.0f && defaultVol <= 10.0f)
+	{
+		maxScale = 10.0f;
+	}
+
+	float masterVol = manager.get<float>("_MasterVolume");
+	float bgmVol = manager.get<float>("_BgmVolume");
+	if (masterVol > maxScale)
+	{
+		maxScale = 100.0f;
+	}
+	if (bgmVol > maxScale)
+	{
+		maxScale = 100.0f;
+	}
+
+	float normMaster = std::clamp(masterVol / maxScale, 0.0f, 1.0f);
+	float normBgm = std::clamp(bgmVol / maxScale, 0.0f, 1.0f);
+
+	// Match Wwise's perceptual volume slider curve (~x^1.8) and Capcom's BGM bus headroom (-11 dB / ~0.28f)
+	// so external audio sits at the same loudness as vanilla BGM without drowning out battle SFX or voices.
+	static constexpr float BASE_BGM_BUS_GAIN = 0.28f;
+	float curvedMaster = (normMaster > 0.0f) ? std::pow(normMaster, 1.8f) : 0.0f;
+	float curvedBgm = (normBgm > 0.0f) ? std::pow(normBgm, 1.8f) : 0.0f;
+	float effectiveVol = std::clamp(
+		curvedMaster * curvedBgm * BASE_BGM_BUS_GAIN * CustomMusicLibrary::instance().getVolumeScale(),
+		0.0f,
+		1.0f);
+
+	if (manager.get<bool>("_EnablePauseMenuBgmMute"))
+	{
+		effectiveVol *= 0.25f;
+	}
+	if (manager.get<bool>("_EnableStaffRollMuteState") ||
+		manager.get<bool>("_IsPlayingMpBgm") ||
+		s_isBgmMutedByEvent)
+	{
+		effectiveVol = 0.0f;
+	}
+
+	CustomAudioPlayer::instance().setMasterVolume(effectiveVol);
+	CustomAudioPlayer::instance().update();
+}
+
+void MusicSystemMod::stopAllIngameCustomAudio()
+{
+	for (auto &[playerId, isCustom] : s_isPlayerCustomAudio)
+	{
+		if (isCustom)
+		{
+			CustomAudioPlayer::instance().stop(playerId);
+			isCustom = false;
+		}
+	}
 }
 
 bool MusicSystemMod::hasMainMenuBgm()
@@ -515,7 +595,14 @@ void MusicSystemMod::reloadBgmForMenuItem(const MenuItem *menuItem, bool restart
 					case app::cSound_Base::PlayingBgmStetaEnum::Pause:
 						// TODO: We could do this not immediately but only upon unpause if the effective music will change
 						// That way if you change music type and back while in battle (SF2) it won't restart field music
+						s_internalStopCall = true;
 						ingameSound.call("coreStopBgm", ingameSound["_BgmSetting"].get<std::uint32_t>("DefaultStopTriggerId"), i);
+						s_internalStopCall = false;
+						if (s_isPlayerCustomAudio[i])
+						{
+							CustomAudioPlayer::instance().stop(i);
+							s_isPlayerCustomAudio[i] = false;
+						}
 						playingBgmInfo.set<std::uint8_t>("State", app::cSound_Base::PlayingBgmStetaEnum::PauseStop);
 						break;
 					}
@@ -551,6 +638,11 @@ void MusicSystemMod::reloadBgmForMenuItem(const MenuItem *menuItem, bool restart
 		{
 			if (restartBgm)
 			{
+				if (s_isLauncherCustomAudio)
+				{
+					CustomAudioPlayer::instance().stop(LAUNCHER_CUSTOM_AUDIO_SLOT);
+					s_isLauncherCustomAudio = false;
+				}
 				// Temporarily unset CurrentMainBgmId to force the play request to go through
 				std::uint16_t currentMainBgmId = launcherSound.get<std::uint16_t>("_CurrentMainBgmId");
 				launcherSound.set<std::uint16_t>("_CurrentMainBgmId", getStaticField<std::uint16_t>("app.sound.SoundLauncherBgmManager.InvalidBgmId"));

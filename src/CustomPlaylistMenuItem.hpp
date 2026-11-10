@@ -28,6 +28,8 @@ struct CustomPlaylistMenuItem : MenuItem
 		FieldOriginal,
 		FieldArranged,
 		Battle,
+		CustomMusic,
+		CustomAndPlaylist,
 	};
 
 public:
@@ -42,6 +44,8 @@ public:
 
 	REFrameworkHelper::Object getCustomPlaylist() const;
 	void setCustomPlaylist(REFrameworkHelper::Object playlist);
+
+	const std::optional<std::filesystem::path> &getCustomMusicFolder() const { return m_customMusicFolder; }
 
 	static REFrameworkHelper::Object getPreferredMixPlaylist();
 	static void setPreferredMixPlaylist(REFrameworkHelper::Object playlist);
@@ -66,6 +70,7 @@ private:
 	std::unordered_map<std::size_t, std::uint16_t> m_pendingDelayBgmRequests;
 
 	std::optional<std::filesystem::path> m_customPlaylistFileName;
+	std::optional<std::filesystem::path> m_customMusicFolder;
 	REFrameworkHelper::Object m_customPlaylist;
 
 	// Static state

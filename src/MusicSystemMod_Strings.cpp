@@ -421,6 +421,34 @@ const std::map<Guid, std::map<via::Language, char16_t const *>> MusicSystemMod::
 			 {via::Language::TransitionalChinese, u"<ICON LAUNCHER_DECIDE> 編輯清單"},
 			 {via::Language::SimplelifiedChinese, u"<ICON LAUNCHER_DECIDE> 编辑列表"},
 		 }},
+		{L"a8f41201-7c9b-4812-9a11-110022334455"_guid,
+		 {
+			 {via::Language::Japanese, u"カスタムBGM <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::English, u"Custom Music <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::TransitionalChinese, u"自訂音樂 <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::SimplelifiedChinese, u"自定义音乐 <ICON LAUNCHER_DECIDE>"},
+		 }},
+		{L"b8f41202-7c9b-4812-9a11-110022334456"_guid,
+		 {
+			 {via::Language::Japanese, u"カスタムフォルダ内の音楽ファイル（mp3/ogg/wav/nsf/spc/vgm等）をランダム再生します。\n決定ボタンで対象フォルダを開きます。"},
+			 {via::Language::English, u"Randomly play user audio files (mp3/ogg/wav/nsf/spc/vgm, etc.) from this category's folder.\nPress Confirm to open the folder and add tracks."},
+			 {via::Language::TransitionalChinese, u"隨機播放此分類資料夾中的自訂音訊檔案（支援 mp3/ogg/wav/nsf/spc/vgm 等）。\n按下確認鍵可直接開啟對應資料夾放入音樂。"},
+			 {via::Language::SimplelifiedChinese, u"随机播放此分类文件夹中上传的音频文件（支持 mp3/ogg循环/wav/nsf/spc/vgm 等）。\n按确认键可直接打开对应文件夹放入音乐。"},
+		 }},
+		{L"c8f41203-7c9b-4812-9a11-110022334457"_guid,
+		 {
+			 {via::Language::Japanese, u"カスタム＋プレイリスト <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::English, u"Custom + Playlist <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::TransitionalChinese, u"自訂＋播放清單 <ICON LAUNCHER_DECIDE>"},
+			 {via::Language::SimplelifiedChinese, u"自定义＋播放列表 <ICON LAUNCHER_DECIDE>"},
+		 }},
+		{L"d8f41204-7c9b-4812-9a11-110022334458"_guid,
+		 {
+			 {via::Language::Japanese, u"カスタムフォルダ内の音楽ファイルと専用プレイリストを合わせてランダム再生します。\n決定ボタンでゲーム内プレイリストを編集します。"},
+			 {via::Language::English, u"Randomly play tracks from both your custom folder and this category's custom playlist.\nPress Confirm to edit the in-game playlist."},
+			 {via::Language::TransitionalChinese, u"將自訂資料夾中的音訊檔案與此分類的專用播放清單混合隨機播放。\n按下確認鍵編輯遊戲內播放清單。"},
+			 {via::Language::SimplelifiedChinese, u"将自定义文件夹中的音频文件与此分类的专用播放列表混合随机播放。\n按确认键编辑游戏内播放列表。"},
+		 }},
 };
 
 const std::map<std::string_view, std::map<via::Language, char16_t const *>> MusicSystemMod::STRINGS_REPLACED =

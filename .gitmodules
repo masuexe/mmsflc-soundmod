@@ -2,3 +2,9 @@
 	path = modules/REFramework
 	url = https://github.com/praydog/REFramework
 	branch = master
+[submodule "modules/miniaudio"]
+	path = modules/miniaudio
+	url = https://github.com/mackron/miniaudio.git
+[submodule "modules/game-music-emu"]
+	path = modules/game-music-emu
+	url = https://github.com/libgme/game-music-emu.git

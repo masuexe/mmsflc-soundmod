@@ -21,3 +21,4 @@ CMakeUserPresets.json
 # Generated folders
 build/
 generated/
+release/

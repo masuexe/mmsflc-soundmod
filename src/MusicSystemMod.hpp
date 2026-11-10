@@ -81,6 +81,11 @@ public:
 
 	static bool hasMainMenuBgm();
 
+	static void syncCustomAudioVolume();
+	static void stopAllIngameCustomAudio();
+
+	static constexpr std::size_t LAUNCHER_CUSTOM_AUDIO_SLOT = 16;
+
 private:
 	static void installHooks();
 	static void uninstallHooks();
@@ -111,9 +116,14 @@ private:
 	static inline std::unordered_map<std::size_t, bool> s_isPlayerArranged;
 	static inline std::unordered_map<std::size_t, std::uint32_t> s_playerPlayTriggerID;
 	static inline std::unordered_map<std::size_t, bool> s_isPlayerOverridden;
+	static inline std::unordered_map<std::size_t, bool> s_isPlayerCustomAudio;
 	static inline std::unordered_map<std::size_t, bool> s_forceUpdatePlayTypeArrange;
 	static inline std::unordered_map<std::size_t, bool> s_suppressUpdatePlayType;
 
+	static inline bool s_isLauncherCustomAudio = false;
+	static inline bool s_isBgmMutedByEvent = false;
+	static inline bool s_internalStopCall = false;
+	static inline bool s_inPauseCall = false;
 	static inline bool s_disableEnableBgmArrangeHook = false;
 	static inline Settings s_settings;
 
